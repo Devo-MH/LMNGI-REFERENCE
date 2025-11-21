@@ -26,7 +26,7 @@ Before running the project, ensure you have the following installed:
 
 1. **Clone the repository**
    ```bash
-   git clone Repo URL
+   git clone https://github.com/SkillMetric/LMNGI-Reference-v.git
    cd LMNGI-Active-Workplace-8d5db41263f348c1ba9
    ```
 
