@@ -55,6 +55,14 @@ let profileUplaod = upload.fields([{ name: 'profile_pic', maxCount: 1 }])
 const registerController = require('../controllers/register.controller');
 const adminController = require('../controllers/admin.controller');
 
+// Validation middleware
+const { 
+  withdrawalValidation, 
+  stakingValidation, 
+  transactionValidation,
+  addressValidation 
+} = require('../middleware/validators/validation.middleware');
+
 // v1 Routers
 const v1AuthRoutes = require('./auth.routes');
 const v1UserRoutes = require('./users.routes');
@@ -78,11 +86,11 @@ const v1HealthRoutes = require('./health.routes');
 
 
 // Register Routing
-router.post('/userregister',  registerController.userRegister.bind()); //done
+router.post('/userregister', addressValidation, registerController.userRegister.bind()); //done
 router.get('/getplandetail',  registerController.getPlanDetails.bind()); //done
-router.post('/busddeposit', ensureWebToken, registerController.depositBUSD.bind()); //done
+router.post('/busddeposit', ensureWebToken, transactionValidation, registerController.depositBUSD.bind()); //done
 router.post('/gettransactionhistory',ensureWebToken, registerController.getTransactionHistory.bind());
-router.post('/addStaking',ensureWebToken, registerController.addStaking.bind());
+router.post('/addStaking',ensureWebToken, stakingValidation, registerController.addStaking.bind());
 router.post('/getstakingHistory',ensureWebToken,registerController.getStakingHistory.bind());
 router.post('/singalclaimreward',ensureWebToken,registerController.SingalClaimReward.bind());
 router.post('/sellplan',ensureWebToken,registerController.SellPlan.bind());
@@ -90,7 +98,7 @@ router.post('/gettotalbalance',ensureWebToken,registerController.getTotalBalance
 router.post('/getreferraluserslist',registerController.getReferralUsersList.bind());
 router.post('/getwithdrawhistory',ensureWebToken,registerController.getWithdrawHistory.bind());
 router.post('/gettotalinvasted',registerController.getTotalInvested.bind());
-router.post('/withdrawcrypto',ensureWebToken,registerController.WithdrawCrypto.bind());
+router.post('/withdrawcrypto',ensureWebToken, withdrawalValidation, registerController.WithdrawCrypto.bind());
 
 
 router.post('/getwithdrawrequest',adminController.getwithdrawrequest.bind());
