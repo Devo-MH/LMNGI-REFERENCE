@@ -43,3 +43,7 @@ google.json
 
 # Uploads (if containing user data)
 backend/uploads/
+# Documentation (local only)
+EMAIL_TEMPLATE.txt
+IMPLEMENTATION_SUMMARY.md
+SECURITY_IMPROVEMENTS.md
