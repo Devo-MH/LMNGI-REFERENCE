@@ -6,6 +6,8 @@ const assert = require("assert");
 const config = require('./config')
 var cron = require('node-cron');
 const mysql = require('mysql2');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 
 const CryptoJS = require("crypto-js");
 var keySize = 256;
@@ -54,6 +56,36 @@ app.use(express.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
 
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
+
+// Rate limiting for API endpoints
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { success: false, msg: 'Too many requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Strict rate limiting for authentication
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5, // 5 attempts per 15 minutes
+  message: { success: false, msg: 'Too many login attempts, please try again later' },
+  skipSuccessfulRequests: true,
+});
+
   
 app.use(cors());
 
@@ -94,7 +126,7 @@ app.get("/", function (req, res) {
     res.send("node is running")
 })
 
- app.use('/api/', routes)
+ app.use('/api/', apiLimiter, routes)
 
 
  io.on('connection', socket => {
@@ -102,8 +134,8 @@ app.get("/", function (req, res) {
     socket.on('joinRoom', async (data) => {
       const ReceiveData = JSON.parse(data)
       // console.log('4343333333333333333333', ReceiveData)
-      var ticket_id = ReceiveData.room;
-      const [ticketMessage, error] = await promisePool.query(`select * from ticket_message where ticket_id =${ticket_id}`);
+      var ticket_id = parseInt(ReceiveData.room);
+      const [ticketMessage, error] = await promisePool.query(`SELECT * FROM ticket_message WHERE ticket_id = ?`, [ticket_id]);
       // console.log('ticketMessage', ticketMessage)
       
       if (ticketMessage.length > 0) {
@@ -144,11 +176,11 @@ app.get("/", function (req, res) {
       const datetime = new Date()
   
       // console.log('socket.id', socket.id)
-      const [insertData, error1] = await promisePool.query(`insert into ticket_message SET ticket_id='${ticket_id}',sender='${sender}',receiver='${receiver}',message='${message}'`);
+      const [insertData, error1] = await promisePool.query(`INSERT INTO ticket_message SET ticket_id=?, sender=?, receiver=?, message=?`, [ticket_id, sender, receiver, message]);
       
       const user = getActiveUser(socket.id);
       console.log('insertData', insertData, user.room)
-      const [ticketMessage, error] = await promisePool.query(`select * from ticket_message where ticket_id =${ticket_id}`);
+      const [ticketMessage, error] = await promisePool.query(`SELECT * FROM ticket_message WHERE ticket_id = ?`, [ticket_id]);
        console.log('insertData', ticketMessage[0])
        
       io.to(user.room).emit('message',user.username, ticketMessage);
